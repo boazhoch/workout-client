@@ -44,4 +44,4 @@ class Exercise extends Component<IExerciseProps> {
   }
 }
 
-export { Exercise };
+export default Exercise;

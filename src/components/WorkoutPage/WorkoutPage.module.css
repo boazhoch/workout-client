@@ -1,0 +1,10 @@
+.hero__body__relative {
+  position: relative;
+}
+
+.workout__title__wrapper {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}

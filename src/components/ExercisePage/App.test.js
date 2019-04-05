@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import App from "./Exercise";
+import App from "./ExercisePage";
 
 it("renders without crashing", () => {
   const div = document.createElement("div");

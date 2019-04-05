@@ -1,13 +1,13 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Route, Link, Switch } from "react-router-dom";
-import App from "../App/App";
-import ExercisePage from "../Exercise/Exercise";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import NavBar from "../NavBar/NavBar";
 import NavBarItem from "../NavBarItem/NavBarItem";
 import ApolloClient from "apollo-boost";
-import gql from "graphql-tag";
 import { ApolloProvider } from "react-apollo";
-import { Exercise } from "../../graphql/queries/exercise.query";
+import { IWorkout } from "../WorkoutPage/WorkoutModule";
+import { ITimer } from "../Timer/TimerModule";
+import { isTimer } from "../../types/type-guards";
+import { IExercise } from "../ExercisePage/ExerciseModule";
 
 const client = new ApolloClient({
   uri: "http://localhost:4000"
@@ -16,43 +16,34 @@ const client = new ApolloClient({
 type routeObject = {
   name?: string;
   path: string;
-  component: any;
   exact?: boolean;
 };
 
 const LazyAppComponent = lazy(() => import("../App/App"));
 
-const LazyExercisePage = lazy(() => import("../Exercise/Exercise"));
+const LazyExercisePage = lazy(() => import("../ExercisePage/ExercisePage"));
+const LazyExercise = lazy(() => import("../ExerciseTile/ExerciseTile"));
+const LazyTimer = lazy(() => import("../Timer/Timer"));
+const LazyWorkoutPage = lazy(() => import("../WorkoutPage/WorkoutPage"));
+const LazyExerciseQuery = lazy(() =>
+  import("../../graphql/queries/exercise.query")
+);
 
-const lazyLoadedComponents: Map<string, any> = new Map<string, any>([
-  ["App", LazyAppComponent],
-  ["Exercise", LazyExercisePage]
-]);
+const LazyWorkoutQuery = lazy(() =>
+  import("../../graphql/queries/workout.query")
+);
 
 const routes: routeObject[] = [
   {
     name: "Home",
     path: "/",
-    component: lazyLoadedComponents.get("App"),
     exact: true
   },
   {
     name: "Exercise",
-    path: "/ex",
-    component: lazyLoadedComponents.get("Exercise")
+    path: "/exercise"
   }
 ];
-
-function renderRoutes(routeList: routeObject[]) {
-  return routeList.map(({ component, ...other }, i) => {
-    console.log(component, other);
-    return (
-      <Route key={i} {...other}>
-        {component}
-      </Route>
-    );
-  });
-}
 
 function createNavBarItemLinks(routeList: routeObject[]) {
   return routeList.map((route, i) => (
@@ -76,7 +67,6 @@ const AppRouter = () => {
         <NavBar items={createNavBarItemLinks(routes)} />
         <Suspense fallback={<LoadingMessage />}>
           <Switch>
-            [
             <Route exact path="/">
               <LazyAppComponent />
             </Route>
@@ -84,9 +74,40 @@ const AppRouter = () => {
               path="/exercise/:id"
               render={props => {
                 return (
-                  <Exercise
+                  <LazyExerciseQuery
                     componentToRender={props => {
                       return <LazyExercisePage exercise={props} />;
+                    }}
+                    id={props.match.params.id}
+                  />
+                );
+              }}
+            />
+            <Route
+              path="/workout/:id"
+              render={props => {
+                return (
+                  <LazyWorkoutQuery
+                    componentToRender={(props: IWorkout) => {
+                      return (
+                        <LazyWorkoutPage
+                          workout={props}
+                          renderWorkoutFlow={(
+                            workoutFlow: (IExercise | ITimer)[]
+                          ) => {
+                            return workoutFlow.map(e => {
+                              if (e) {
+                                if (isTimer(e)) {
+                                  return <LazyTimer timer={e} />;
+                                } else {
+                                  return <LazyExercise exercise={e} />;
+                                }
+                              }
+                              return null;
+                            });
+                          }}
+                        />
+                      );
                     }}
                     id={props.match.params.id}
                   />
